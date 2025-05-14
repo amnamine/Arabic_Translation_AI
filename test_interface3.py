@@ -13,6 +13,54 @@ from gtts import gTTS
 import tempfile
 import pygame
 
+class ModificationWindow:
+    def __init__(self, parent, text, callback):
+        self.top = tk.Toplevel(parent)
+        self.top.title("Modify Translation")
+        self.top.geometry("800x600")
+        self.callback = callback
+        
+        # Text area for modification
+        self.text_area = scrolledtext.ScrolledText(
+            self.top,
+            width=70,
+            height=20,
+            font=('Segoe UI', 11),
+            bg='#EDF2F7',
+            fg='#2C3E50',
+            padx=10,
+            pady=5
+        )
+        self.text_area.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
+        self.text_area.insert("1.0", text)
+        
+        # Validate button
+        self.validate_btn = tk.Button(
+            self.top,
+            text="Validate Translation",
+            command=self.validate,
+            bg='#3498DB',
+            fg='#FFFFFF',
+            font=('Segoe UI', 10),
+            relief=tk.FLAT,
+            padx=15,
+            pady=8
+        )
+        self.validate_btn.pack(pady=10)
+        
+        # Center the window
+        self.top.update_idletasks()
+        width = self.top.winfo_width()
+        height = self.top.winfo_height()
+        x = (self.top.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.top.winfo_screenheight() // 2) - (height // 2)
+        self.top.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def validate(self):
+        modified_text = self.text_area.get("1.0", tk.END).strip()
+        self.callback(modified_text)
+        self.top.destroy()
+
 class TranslationApp:
     def __init__(self, root):
         self.root = root
@@ -160,6 +208,8 @@ class TranslationApp:
         self.create_styled_button(button_frame, "Load PDF", self.load_pdf)
         self.create_styled_button(button_frame, "Save as PDF", self.save_as_pdf)
         self.create_styled_button(button_frame, "Reset", self.reset)
+        self.modify_btn = self.create_styled_button(button_frame, "Modify Translation", self.modify_translation)
+        self.modify_btn.configure(state='disabled')  # Initially disabled
 
         self.translator = Translator()
 
@@ -282,11 +332,13 @@ class TranslationApp:
             self.output_area.delete("1.0", tk.END)
             self.output_area.insert("1.0", translated_text)
             self.status_bar['text'] = f"Translation completed"
-
+            self.modify_btn.configure(state='normal')  # Enable modify button after translation
+            
         except Exception as e:
             self.status_bar['text'] = "Translation error"
             self.output_area.delete("1.0", tk.END)
             self.output_area.insert("1.0", f"An error occurred: {str(e)}")
+            self.modify_btn.configure(state='disabled')
 
     def toggle_play(self):
         if self.current_audio_file:
@@ -476,12 +528,23 @@ class TranslationApp:
             self.status_bar['text'] = "Error saving PDF"
             messagebox.showerror("Error", f"Failed to save PDF: {str(e)}")
 
+    def modify_translation(self):
+        current_text = self.output_area.get("1.0", tk.END).strip()
+        if current_text:
+            ModificationWindow(self.root, current_text, self.update_translation)
+
+    def update_translation(self, modified_text):
+        self.output_area.delete("1.0", tk.END)
+        self.output_area.insert("1.0", modified_text)
+        self.status_bar['text'] = "Translation modified"
+
     def reset(self):
         self.text_area.delete("1.0", tk.END)
         self.output_area.delete("1.0", tk.END)
         self.current_file = None
         self.progress['value'] = 0
         self.status_bar['text'] = "Ready"
+        self.modify_btn.configure(state='disabled')  # Disable modify button on reset
         if self.current_audio_file:
             pygame.mixer.music.stop()
             pygame.mixer.music.unload()  # Unload the music file first
