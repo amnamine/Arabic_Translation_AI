@@ -484,10 +484,15 @@ class TranslationApp:
         self.status_bar['text'] = "Ready"
         if self.current_audio_file:
             pygame.mixer.music.stop()
+            pygame.mixer.music.unload()  # Unload the music file first
             self.is_playing = False
             self.play_btn.configure(text="▶")
-            if os.path.exists(self.current_audio_file):
-                os.unlink(self.current_audio_file)
+            try:
+                if os.path.exists(self.current_audio_file):
+                    os.unlink(self.current_audio_file)
+            except PermissionError:
+                # If file is still locked, we'll just ignore the error
+                pass
             self.current_audio_file = None
 
 if __name__ == "__main__":
