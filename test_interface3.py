@@ -124,7 +124,7 @@ class TranslationApp:
         self.source_lang_label = tk.Label(lang_frame, text="From:", bg=self.style['bg'])
         self.source_lang_label.pack(side=tk.LEFT, padx=5)
         self.source_lang_combo = ttk.Combobox(lang_frame, textvariable=self.source_lang_var, 
-                                            values=['Arabic', 'English', 'French', 'Italian', 'Latin', 'Spanish'])
+                                            values=['Arabic', 'Deutsch', 'English', 'French', 'Italian', 'Latin', 'Spanish'])
         self.source_lang_combo.pack(side=tk.LEFT, padx=5)
 
         # Target language selection
@@ -132,7 +132,7 @@ class TranslationApp:
         self.target_lang_label = tk.Label(lang_frame, text="To:", bg=self.style['bg'])
         self.target_lang_label.pack(side=tk.LEFT, padx=5)
         self.target_lang_combo = ttk.Combobox(lang_frame, textvariable=self.target_lang_var, 
-                                            values=['Arabic', 'English', 'French', 'Italian', 'Latin', 'Spanish'])
+                                            values=['Arabic', 'Deutsch', 'English', 'French', 'Italian', 'Latin', 'Spanish'])
         self.target_lang_combo.pack(side=tk.LEFT, padx=5)
 
         for combo in [self.source_lang_combo, self.target_lang_combo]:
@@ -294,6 +294,7 @@ class TranslationApp:
             # Add language mapping
             lang_map = {
                 'Arabic': 'ar',
+                'Deutsch': 'de',
                 'English': 'en',
                 'French': 'fr',
                 'Italian': 'it',
@@ -383,6 +384,7 @@ class TranslationApp:
                 
                 lang_map = {
                     'Arabic': 'ar',
+                    'Deutsch': 'de',
                     'English': 'en',
                     'French': 'fr',
                     'Italian': 'it',
@@ -418,6 +420,7 @@ class TranslationApp:
             # Detect language from the target language combobox
             lang_map = {
                 'Arabic': 'ar',
+                'Deutsch': 'de',
                 'English': 'en',
                 'French': 'fr',
                 'Italian': 'it',
