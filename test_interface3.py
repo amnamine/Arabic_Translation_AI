@@ -186,6 +186,35 @@ class TranslationApp:
         # Store current file name
         self.current_file = None
 
+        # Audio control variables
+        self.current_audio_file = None
+        self.is_playing = False
+        self.volume = 0.5
+        pygame.mixer.init()
+        pygame.mixer.music.set_volume(self.volume)
+
+        # Audio controls frame
+        audio_frame = tk.Frame(main_frame, bg=self.style['bg'])
+        audio_frame.pack(pady=5)
+
+        # Audio control buttons
+        self.play_btn = self.create_styled_button(audio_frame, "▶", self.toggle_play)
+        self.save_audio_btn = self.create_styled_button(audio_frame, "Save MP3", self.save_audio)
+        
+        # Volume controls
+        vol_frame = tk.Frame(audio_frame, bg=self.style['bg'])
+        vol_frame.pack(side=tk.LEFT, padx=5)
+        
+        self.vol_down_btn = self.create_styled_button(vol_frame, "−", self.volume_down)
+        self.vol_up_btn = self.create_styled_button(vol_frame, "+", self.volume_up)
+        
+        # Volume label
+        self.vol_label = tk.Label(vol_frame, 
+                                text=f"Volume: {int(self.volume * 100)}%",
+                                bg=self.style['bg'],
+                                fg=self.style['fg'])
+        self.vol_label.pack(side=tk.LEFT, padx=5)
+
     def create_styled_button(self, parent, text, command):
         btn = tk.Button(parent, 
                        text=text,
@@ -259,6 +288,63 @@ class TranslationApp:
             self.output_area.delete("1.0", tk.END)
             self.output_area.insert("1.0", f"An error occurred: {str(e)}")
 
+    def toggle_play(self):
+        if self.current_audio_file:
+            if self.is_playing:
+                pygame.mixer.music.pause()
+                self.play_btn.configure(text="▶")
+            else:
+                pygame.mixer.music.unpause()
+                self.play_btn.configure(text="⏸")
+            self.is_playing = not self.is_playing
+
+    def volume_up(self):
+        if self.volume < 1.0:
+            self.volume = min(1.0, self.volume + 0.1)
+            pygame.mixer.music.set_volume(self.volume)
+            self.vol_label.configure(text=f"Volume: {int(self.volume * 100)}%")
+
+    def volume_down(self):
+        if self.volume > 0.0:
+            self.volume = max(0.0, self.volume - 0.1)
+            pygame.mixer.music.set_volume(self.volume)
+            self.vol_label.configure(text=f"Volume: {int(self.volume * 100)}%")
+
+    def save_audio(self):
+        try:
+            text = self.output_area.get("1.0", tk.END).strip()
+            if not text:
+                messagebox.showwarning("Warning", "No text to save as audio")
+                return
+            
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".mp3",
+                filetypes=[("MP3 files", "*.mp3")],
+                initialfile="translation.mp3"
+            )
+            
+            if file_path:
+                self.status_bar['text'] = "Generating audio file..."
+                self.root.update()
+                
+                lang_map = {
+                    'Arabic': 'ar',
+                    'English': 'en',
+                    'French': 'fr',
+                    'Latin': 'la'
+                }
+                
+                lang = lang_map[self.target_lang_var.get()]
+                tts = gTTS(text=text, lang=lang)
+                tts.save(file_path)
+                
+                self.status_bar['text'] = "Audio saved successfully"
+                messagebox.showinfo("Success", "Audio file saved successfully!")
+        
+        except Exception as e:
+            self.status_bar['text'] = "Error saving audio"
+            messagebox.showerror("Error", f"Failed to save audio: {str(e)}")
+
     def speak_text(self):
         try:
             text = self.output_area.get("1.0", tk.END).strip()
@@ -287,6 +373,11 @@ class TranslationApp:
             tts = gTTS(text=text, lang=lang)
             tts.save(temp_path)
             
+            # Update current audio file
+            self.current_audio_file = temp_path
+            self.is_playing = True
+            self.play_btn.configure(text="⏸")
+            
             # Play the audio
             self.status_bar['text'] = "Reading text..."
             self.root.update()
@@ -294,14 +385,7 @@ class TranslationApp:
             pygame.mixer.music.load(temp_path)
             pygame.mixer.music.play()
             
-            # Wait for playback to finish
-            while pygame.mixer.music.get_busy():
-                pygame.time.Clock().tick(10)
-            
-            # Cleanup
-            pygame.mixer.music.unload()
-            os.unlink(temp_path)
-            
+            # Don't wait for playback to finish anymore
             self.status_bar['text'] = "Ready"
             
         except Exception as e:
@@ -398,6 +482,13 @@ class TranslationApp:
         self.current_file = None
         self.progress['value'] = 0
         self.status_bar['text'] = "Ready"
+        if self.current_audio_file:
+            pygame.mixer.music.stop()
+            self.is_playing = False
+            self.play_btn.configure(text="▶")
+            if os.path.exists(self.current_audio_file):
+                os.unlink(self.current_audio_file)
+            self.current_audio_file = None
 
 if __name__ == "__main__":
     # sys.stdout.reconfigure(encoding='utf-8')  # Not needed for .exe
